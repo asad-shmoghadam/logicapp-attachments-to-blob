@@ -1,0 +1,226 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "logicAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Logic App."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location of the Logic App."
+      }
+    },
+    "azureblobConnectionName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Azure Blob Storage connection."
+      }
+    },
+    "workflows_ProcessAttachments_CCPS_name": {
+      "defaultValue": "ProcessAttachments-CCPS",
+      "type": "string"
+    },
+    "workflows_ProcessAttachments-CCPS_parameters_$connections": {
+      "defaultValue": {
+        "azureblob": {
+          "connectionId": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/resourceGroups/ccps-rg/providers/Microsoft.Web/connections/azureblob",
+          "connectionName": "azureblob",
+          "id": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/providers/Microsoft.Web/locations/canadaeast/managedApis/azureblob"
+        },
+        "outlook": {
+          "connectionId": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/resourceGroups/ccps-rg/providers/Microsoft.Web/connections/outlook-6",
+          "connectionName": "outlook-6",
+          "id": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/providers/Microsoft.Web/locations/canadaeast/managedApis/outlook"
+        }
+      },
+      "type": "Object"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-07-01",
+      "dependsOn": [],
+      "location": "[parameters('location')]",
+      "name": "[parameters('logicAppName')]",
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {
+                "azureblob": {
+                  "connectionId": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/resourceGroups/ccps-rg/providers/Microsoft.Web/connections/azureblob",
+                  "connectionName": "azureblob",
+                  "id": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/providers/Microsoft.Web/locations/canadaeast/managedApis/azureblob"
+                },
+                "outlook": {
+                  "connectionId": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/resourceGroups/ccps-rg/providers/Microsoft.Web/connections/outlook-6",
+                  "connectionName": "outlook-6",
+                  "id": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/providers/Microsoft.Web/locations/canadaeast/managedApis/outlook"
+                }
+              },
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "When_a_new_email_arrives_(V2)": {
+              "splitOn": "@triggerBody()?['value']",
+              "type": "ApiConnectionNotification",
+              "inputs": {
+                "fetch": {
+                  "method": "get",
+                  "pathTemplate": {
+                    "template": "/v2/Mail/OnNewEmail"
+                  },
+                  "queries": {
+                    "fetchOnlyWithAttachment": true,
+                    "folderPath": "Inbox",
+                    "importance": "Any",
+                    "includeAttachments": true,
+                    "to": "sensor-data@vdq.ccps.io"
+                  }
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['outlook']['connectionId']"
+                  }
+                },
+                "subscribe": {
+                  "body": {
+                    "NotificationUrl": "@{listCallbackUrl()}"
+                  },
+                  "method": "post",
+                  "pathTemplate": {
+                    "template": "/MailSubscriptionPoke/$subscriptions"
+                  },
+                  "queries": {
+                    "fetchOnlyWithAttachment": true,
+                    "folderPath": "Inbox",
+                    "importance": "Any"
+                  }
+                }
+              }
+            }
+          },
+          "actions": {
+            "Condition": {
+              "actions": {
+                "Create_blob_(V2)": {
+                  "runAfter": {
+                    "RemoveHTMLFunction": ["Succeeded"]
+                  },
+                  "type": "ApiConnection",
+                  "inputs": {
+                    "body": "@body('RemoveHTMLFunction')",
+                    "headers": {
+                      "ReadFileMetadataFromServer": true
+                    },
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['azureblob']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
+                    "queries": {
+                      "folderPath": "/attachments",
+                      "name": "@triggerBody()?['From']",
+                      "queryParametersSingleEncoded": true
+                    }
+                  }
+                },
+                "For_each": {
+                  "foreach": "@triggerBody()?['Attachments']",
+                  "actions": {
+                    "Condition_2": {
+                      "actions": {
+                        "Create_blob_(V2)_2": {
+                          "runAfter": {},
+                          "type": "ApiConnection",
+                          "inputs": {
+                            "body": "@base64ToBinary(items('For_each')?['contentBytes'])",
+                            "headers": {
+                              "ReadFileMetadataFromServer": true
+                            },
+                            "host": {
+                              "connection": {
+                                "name": "@parameters('$connections')['azureblob']['connectionId']"
+                              }
+                            },
+                            "method": "post",
+                            "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
+                            "queries": {
+                              "folderPath": "/attachments",
+                              "name": "@items('For_each')?['name']",
+                              "queryParametersSingleEncoded": true
+                            }
+                          },
+                          "runtimeConfiguration": {
+                            "contentTransfer": {
+                              "transferMode": "Chunked"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {},
+                      "expression": {
+                        "and": [
+                          {
+                            "endsWith": ["@items('For_each')?['Name']", ".xls"]
+                          }
+                        ]
+                      },
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {
+                    "Create_blob_(V2)": ["Succeeded"]
+                  },
+                  "type": "Foreach"
+                },
+                "RemoveHTMLFunction": {
+                  "runAfter": {},
+                  "type": "Function",
+                  "inputs": {
+                    "body": {
+                      "emailBody": "@triggerBody()?['Body']"
+                    },
+                    "function": {
+                      "id": "/subscriptions/239f7d61-9eb4-4df5-a795-6ccb08322d7c/resourceGroups/ccps-rg/providers/Microsoft.Web/sites/EmailHTMLCleanApp-CCPS/functions/RemoveHTMLFunction"
+                    }
+                  }
+                }
+              },
+              "runAfter": {},
+              "expression": {
+                "and": [
+                  {
+                    "equals": ["@triggerBody()?['HasAttachment']", true]
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": "[parameters('workflows_ProcessAttachments-CCPS_parameters_$connections')]"
+          }
+        },
+        "state": "Enabled"
+      },
+      "scale": null,
+      "tags": {},
+      "type": "Microsoft.Logic/workflows"
+    }
+  ],
+  "variables": {}
+}

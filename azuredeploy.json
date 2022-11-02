@@ -41,7 +41,6 @@
     },
     "azureblobAccessKey": {
       "type": "secureobject",
-      "defaultValue": "",
       "metadata": {
         "description": "Specify a valid primary/secondary storage account access key."
       }

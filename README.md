@@ -1,6 +1,6 @@
 # logicapp-attachments-to-blob
 
-> This template creates an logic app that you can use to store '.xls' attachements to Azure Blob Storage.
+> This template creates an logic app that you can use to store attachements with specific file extensions (e.g. `.xls`) to Azure Blob Storage.
 
 ## Quick Start
 
@@ -16,4 +16,4 @@
 
 - An Azure Logic App resource
 
-- An Azure Function for cleaning up the HTML content of the email body, you can use [Function A - RemoveHTML](https://docs.microsoft.com/azure/logic-apps/logic-apps-overview#resource-type-differences)
+- An Azure Function for removing HTML from the body of the email, you can use [Function A - RemoveHTML](https://docs.microsoft.com/azure/logic-apps/logic-apps-overview#resource-type-differences)

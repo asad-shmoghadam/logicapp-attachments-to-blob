@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "logicAppName": {
@@ -15,7 +15,7 @@
       "type": "string",
       "defaultValue": "[resourceGroup().location]",
       "metadata": {
-        "description": "The location of the Logic App."
+        "description": "The location for all resources."
       }
     },
     "azureblobConnectionName": {
@@ -86,6 +86,13 @@
       "defaultValue": "/attachments",
       "metadata": {
         "description": "The name of the container to store the attachments."
+      }
+    },
+    "fileExtension": {
+      "type": "string",
+      "defaultValue": ".xls",
+      "metadata": {
+        "description": "The file extension to use for filtering the attachments."
       }
     }
   },
@@ -213,7 +220,10 @@
                       "expression": {
                         "and": [
                           {
-                            "endsWith": ["@items('For_each')?['Name']", ".xls"]
+                            "endsWith": [
+                              "@items('For_each')?['Name']",
+                              "parameters('fileExtension')"
+                            ]
                           }
                         ]
                       },
@@ -233,7 +243,7 @@
                       "emailBody": "@triggerBody()?['Body']"
                     },
                     "function": {
-                      "id": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'), 'functions', parameters('functionName'))]"
+                      "id": "[subscriptionResourceId('Microsoft.Web/sites', parameters('functionAppName'), 'functions', parameters('functionName'))]"
                     }
                   }
                 }
@@ -255,12 +265,12 @@
           "$connections": {
             "value": {
               "azureblob": {
-                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('location'), '/managedApis/azureblob')]",
+                "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'azureblob')]",
                 "connectionId": "[resourceId('Microsoft.Web/connections', parameters('azureblobConnectionName'))]",
                 "connectionName": "[parameters('azureblobConnectionName')]"
               },
               "outlook": {
-                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('location'), '/managedApis/outlook')]",
+                "id": "subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'outlook')",
                 "connectionId": "[resourceId('Microsoft.Web/connections', parameters('outlookConnectionName'))]",
                 "connectionName": "[parameters('outlookConnectionName')]"
               }

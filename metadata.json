@@ -1,0 +1,9 @@
+{
+  "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
+  "type": "QuickStart",
+  "itemDisplayName": "Store email attachments with Logic app",
+  "description": "This template allows you to create a Logic app that stores email attachments. The Logic app is triggered by an email message and stores the attachments in a blob storage container.",
+  "summary": "Store email atachments with Logic app",
+  "githubUsername": "asad-shmoghadam",
+  "dateUpdated": "2022-11-01"
+}

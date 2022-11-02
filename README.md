@@ -1,6 +1,6 @@
 # logicapp-attachments-to-blob
 
-> description: This template creates an logic app that you can use to store '.xls' attachements to Azure Blob Storage.
+> This template creates an logic app that you can use to store '.xls' attachements to Azure Blob Storage.
 
 ## Quick Start
 

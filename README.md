@@ -16,4 +16,4 @@
 
 - An Azure Logic App resource
 
-- An Azure Function for removing HTML from the body of the email, you can use [Function A - RemoveHTML](https://docs.microsoft.com/azure/logic-apps/logic-apps-overview#resource-type-differences)
+- An Azure Function for removing HTML from the body of the email, you can use [Function A - RemoveHTML](https://github.com/asad-shmoghadam/az-func-a-remove-html)
